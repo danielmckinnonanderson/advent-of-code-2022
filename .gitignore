@@ -1,5 +1,9 @@
-# binaries and builds
-/target
+# binaries builds and bugs
+debug/
+target/
+
+# rust format
+**/*.rs.bk
 
 # system files
 .DS_Store
