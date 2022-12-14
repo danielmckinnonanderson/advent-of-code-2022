@@ -50,40 +50,35 @@ type Arrangement = HashMap<i8, Vec<Crate>>;
 fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
     let mut result: Arrangement = HashMap::new();
 
-    // hard-code, 9th row of input contains the integer column names
-    // set up map key values
-    for index in input.get(8).unwrap().split_whitespace().into_iter() {
-        result.insert(index.parse::<i8>().unwrap(), vec![]);
-    }
-
-    // gross
-    let mut input = input.clone();
-    input.remove(8);
-
-    // input is 8 rows of crate 'stacks', and 9th row is stack key
+    // collect rows and split them into columns instead
+    // this is so sickening and vile and horrible
     for row in input {
-        // divide row into groups of characters, separated by whitespace
-        let columns = sub_strings(&row, 4);
+        let items = sub_strings(&row, 4);
 
-        for col in columns.iter() {
-            // if the string is not empty, find its column index
-            if col.trim() != "" {
-                println!("Col = {}", col.trim());
-                
-                match columns.iter().position(|&s| &s == col) {
-                    Some(i) => {
-                        println!("Index {}", i);
-                        let index: i8 = i as i8 + 1;
-                        result.prepend_insert(index, Crate::from_input_diagram_str(&col.trim()));
-                        // swap character in input to prevent repeat inserts
-                        // columns[i] = &String::from("[9]")
-                    }
-                    None => (),
-                }
+        // if we reach the row of numbers, we're done here
+        if items.first().unwrap().contains("1") {
+            break;
+        }
+
+        let mut i: usize = 1;
+
+        while i < 10 {
+            if !result.contains_key(&(i as i8)) {
+                result.insert(i as i8, vec![]);
             }
+            
+            if !items.get(i - 1).unwrap().trim().is_empty() {
+                let item = items.get(i -1).unwrap()
+                                      .trim()
+                                      .trim_end_matches(']')
+                                      .trim_start_matches('[')
+                                      .to_string();
+                
+                result.prepend_insert_into(i as i8, Crate::new(item));
+            }
+            i += 1;
         }
     }
-
     result
 }
 
@@ -111,7 +106,9 @@ trait CrateArrangment {
 
     fn move_crates(&mut self, index_from: i8, index_to: i8, quantity: i8);
 
-    fn prepend_insert(&mut self, key: i8, value: Crate);
+    fn insert_into(&mut self, index: i8, value: Crate);
+
+    fn prepend_insert_into(&mut self, key: i8, value: Crate);
 
     fn execute_instruction(&mut self, instruction: &str);
 
@@ -178,7 +175,14 @@ impl CrateArrangment for Arrangement {
         }
     }
 
-    fn prepend_insert(&mut self, key: i8, value: Crate) {
+    fn insert_into(&mut self, key: i8, value: Crate) {
+        let v: &Vec<Crate> = self.get(&key).unwrap();
+        let v = vec![v.to_vec(), vec![value]].concat();
+        self.insert(key, v);
+    }
+
+    fn prepend_insert_into(&mut self, key: i8, value: Crate) {
+        println!("Key {}", key);
         let v: &Vec<Crate> = self.get(&key).unwrap();
         // this is disgusting
         let v = vec![vec![value], v.to_vec()].concat();
@@ -293,15 +297,15 @@ mod tests {
     #[test]
     fn test_arr_from_input() {
         let input = vec![
-            String::from("               "),
-            String::from("            [W]"),
-            String::from("[P]         [R]"),
-            String::from("[M]     [O] [Z]"),
-            String::from("[J]     [L] [K]"),
-            String::from("[G] [H] [I] [G]"),
-            String::from("[D] [E] [F] [E]"),
-            String::from("[A] [B] [A] [A]"),
-            String::from(" 1   2   3   4 "),
+            String::from("                                   "),
+            String::from("            [W]                    "),
+            String::from("[P]         [R]     [G] [I] [T]    "),
+            String::from("[M]     [O] [Z]     [G] [U] [D]    "),
+            String::from("[J]     [L] [K] [E] [U] [S] [A] [E]"),
+            String::from("[G] [H] [I] [G] [P] [N] [H] [W] [Q]"),
+            String::from("[D] [E] [F] [E] [Q] [U] [C] [B] [B]"),
+            String::from("[A] [B] [A] [A] [U] [X] [Y] [P] [O]"),
+            String::from(" 1   2   3   4   5   6   7   8   9"),
         ];
 
         let result = arrangement_from_input_diagram(&input);
