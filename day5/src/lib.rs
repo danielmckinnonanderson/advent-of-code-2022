@@ -9,12 +9,37 @@ pub fn solve_part_1() -> Vec<String> {
 
     let mut arrangement = arrangement_from_input_diagram(&input_diagram);
 
-    arrangement.execute_instructions(instructions);
+    arrangement.execute_instructions(instructions, &MoveStrategy::OneByOne);
 
     let mut result: Vec<String> = vec![];
+    
+    let mut i = 1;
 
-    for key in arrangement.keys() {
-        result.push(arrangement.peek(*key).unwrap().0.clone());
+    while i < 10 {
+        result.push(arrangement.peek(i).unwrap().0.clone());
+        i += 1;
+    }
+
+    result
+}
+
+pub fn solve_part_2() -> Vec<String> {
+    let input: Vec<String> = get_input_from_stdin();
+
+    let input_diagram = &input[0..9].to_vec();
+    let instructions = &input[10..].to_vec();
+
+    let mut arrangement = arrangement_from_input_diagram(&input_diagram);
+
+    arrangement.execute_instructions(instructions, &MoveStrategy::AsStack);
+
+    let mut result: Vec<String> = vec![];
+    
+    let mut i = 1;
+
+    while i < 10 {
+        result.push(arrangement.peek(i).unwrap().0.clone());
+        i += 1;
     }
 
     result
@@ -46,6 +71,11 @@ impl Crate {
 }
 
 type Arrangement = HashMap<i8, Vec<Crate>>;
+
+enum MoveStrategy {
+    OneByOne,
+    AsStack
+}
 
 fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
     let mut result: Arrangement = HashMap::new();
@@ -79,7 +109,6 @@ fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
             i += 1;
         }
     }
-    println!("{:?}", result);
     result
 }
 
@@ -105,15 +134,17 @@ trait CrateArrangment {
 
     fn peek(&self, index: i8) -> Result<&Crate, Error>;
 
-    fn move_crates(&mut self, index_from: i8, index_to: i8, quantity: i8);
+    fn move_crates_one_by_one(&mut self, index_from: i8, index_to: i8, quantity: i8);
+
+    fn move_crates_as_stack(&mut self, index_from: i8, index_to:i8, quantity: i8);
 
     fn insert_into(&mut self, index: i8, value: Crate);
 
     fn prepend_insert_into(&mut self, key: i8, value: Crate);
 
-    fn execute_instruction(&mut self, instruction: &str);
+    fn execute_instruction(&mut self, instruction: &str, strategy: &MoveStrategy);
 
-    fn execute_instructions(&mut self, instructions: &Vec<String>);
+    fn execute_instructions(&mut self, instructions: &Vec<String>, strategy: &MoveStrategy);
 }
 
 impl CrateArrangment for Arrangement {
@@ -162,18 +193,30 @@ impl CrateArrangment for Arrangement {
         }
     }
 
-    fn move_crates(&mut self, index_from: i8, index_to: i8, quantity: i8) {
+    fn move_crates_one_by_one(&mut self, index_from: i8, index_to: i8, quantity: i8) {
         match self.pop(index_from, quantity) {
             Ok(moving) => match self.get_mut(&index_to) {
                 Some(vec) => {
-                    println!("Before {:?}", moving);
                     let moved = vec![vec.to_vec(), moving].concat();
-                    println!("After {:?}", moved);
                     self.insert(index_to, moved);
                 }
                 None => panic!("Stinky"),
             },
             Err(_) => panic!("Bad"),
+        }
+    }
+
+    fn move_crates_as_stack(&mut self, index_from: i8, index_to:i8, quantity: i8) {
+        match self.pop(index_from, quantity) {
+            Ok(mut moving) => match self.get_mut(&index_to) {
+                Some(vec) => {
+                    moving.reverse();
+                    let moved = vec![vec.to_vec(), moving].concat();
+                    self.insert(index_to, moved);
+                }
+                None => panic!("Stinky")
+            },
+                Err(_) => panic!("Bad")
         }
     }
 
@@ -184,27 +227,28 @@ impl CrateArrangment for Arrangement {
     }
 
     fn prepend_insert_into(&mut self, key: i8, value: Crate) {
-        println!("Key {}", key);
         let v: &Vec<Crate> = self.get(&key).unwrap();
         // this is disgusting
         let v = vec![vec![value], v.to_vec()].concat();
         self.insert(key, v);
     }
 
-    fn execute_instruction(&mut self, instruction: &str) {
+    fn execute_instruction(&mut self, instruction: &str, strategy: &MoveStrategy) {
         // instruction in form of "move x from y to z"
         let instruction = instruction.split_whitespace().collect::<Vec<&str>>();
         let quantity = instruction.get(1).unwrap().parse::<i8>().unwrap();
         let index_from = instruction.get(3).unwrap().parse::<i8>().unwrap();
         let index_to = instruction.get(5).unwrap().parse::<i8>().unwrap();
 
-        self.move_crates(index_from, index_to, quantity);
+        match strategy {
+            MoveStrategy::OneByOne => self.move_crates_one_by_one(index_from, index_to, quantity),
+            MoveStrategy::AsStack => self.move_crates_as_stack(index_from, index_to, quantity)
+        }
     }
 
-    fn execute_instructions(&mut self, instructions: &Vec<String>) {
+    fn execute_instructions(&mut self, instructions: &Vec<String>, strategy: &MoveStrategy) {
         for instruction in instructions {
-            println!("{}", instruction);
-            self.execute_instruction(instruction);
+            self.execute_instruction(instruction, strategy);
         }
     }
 }
@@ -278,7 +322,7 @@ mod tests {
             ],
         );
 
-        a.move_crates(2, 1, 1);
+        a.move_crates_one_by_one(2, 1, 1);
 
         assert_eq!(
             vec![
@@ -401,7 +445,7 @@ mod tests {
             String::from("move 4 from 3 to 1"),
         ];
 
-        a.execute_instructions(&input);
+        a.execute_instructions(&input, &MoveStrategy::OneByOne);
 
         assert_eq!(9, a.get(&1).unwrap().len());
         assert_eq!(1, a.get(&2).unwrap().len());
