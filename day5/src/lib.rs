@@ -1,5 +1,5 @@
+use std::io::{self, BufRead};
 use std::{collections::HashMap, io::Error};
-use std::io::{self, BufRead}; 
 
 pub fn solve_part_1() -> Vec<String> {
     let input: Vec<String> = get_input_from_stdin();
@@ -12,7 +12,7 @@ pub fn solve_part_1() -> Vec<String> {
     arrangement.execute_instructions(instructions, &MoveStrategy::OneByOne);
 
     let mut result: Vec<String> = vec![];
-    
+
     let mut i = 1;
 
     while i < 10 {
@@ -34,7 +34,7 @@ pub fn solve_part_2() -> Vec<String> {
     arrangement.execute_instructions(instructions, &MoveStrategy::AsStack);
 
     let mut result: Vec<String> = vec![];
-    
+
     let mut i = 1;
 
     while i < 10 {
@@ -52,7 +52,6 @@ fn get_input_from_stdin() -> Vec<String> {
 
     vec
 }
-
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Crate(String);
@@ -74,7 +73,7 @@ type Arrangement = HashMap<i8, Vec<Crate>>;
 
 enum MoveStrategy {
     OneByOne,
-    AsStack
+    AsStack,
 }
 
 fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
@@ -96,14 +95,16 @@ fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
             if !result.contains_key(&(i as i8)) {
                 result.insert(i as i8, vec![]);
             }
-            
+
             if !items.get(i - 1).unwrap().trim().is_empty() {
-                let item = items.get(i -1).unwrap()
-                                      .trim()
-                                      .trim_end_matches(']')
-                                      .trim_start_matches('[')
-                                      .to_string();
-                
+                let item = items
+                    .get(i - 1)
+                    .unwrap()
+                    .trim()
+                    .trim_end_matches(']')
+                    .trim_start_matches('[')
+                    .to_string();
+
                 result.prepend_insert_into(i as i8, Crate::new(item));
             }
             i += 1;
@@ -136,7 +137,7 @@ trait CrateArrangment {
 
     fn move_crates_one_by_one(&mut self, index_from: i8, index_to: i8, quantity: i8);
 
-    fn move_crates_as_stack(&mut self, index_from: i8, index_to:i8, quantity: i8);
+    fn move_crates_as_stack(&mut self, index_from: i8, index_to: i8, quantity: i8);
 
     fn insert_into(&mut self, index: i8, value: Crate);
 
@@ -183,13 +184,13 @@ impl CrateArrangment for Arrangement {
                 Some(value) => Ok(&value),
                 None => Err(std::io::Error::new(
                     std::io::ErrorKind::NotFound,
-                    format!("Stack at index {} was empty", index)
-                ))
-            }
+                    format!("Stack at index {} was empty", index),
+                )),
+            },
             false => Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
-                format!("Index was not found in map, index was {}", index)
-            ))
+                format!("Index was not found in map, index was {}", index),
+            )),
         }
     }
 
@@ -206,7 +207,7 @@ impl CrateArrangment for Arrangement {
         }
     }
 
-    fn move_crates_as_stack(&mut self, index_from: i8, index_to:i8, quantity: i8) {
+    fn move_crates_as_stack(&mut self, index_from: i8, index_to: i8, quantity: i8) {
         match self.pop(index_from, quantity) {
             Ok(mut moving) => match self.get_mut(&index_to) {
                 Some(vec) => {
@@ -214,9 +215,9 @@ impl CrateArrangment for Arrangement {
                     let moved = vec![vec.to_vec(), moving].concat();
                     self.insert(index_to, moved);
                 }
-                None => panic!("Stinky")
+                None => panic!("Stinky"),
             },
-                Err(_) => panic!("Bad")
+            Err(_) => panic!("Bad"),
         }
     }
 
@@ -242,7 +243,7 @@ impl CrateArrangment for Arrangement {
 
         match strategy {
             MoveStrategy::OneByOne => self.move_crates_one_by_one(index_from, index_to, quantity),
-            MoveStrategy::AsStack => self.move_crates_as_stack(index_from, index_to, quantity)
+            MoveStrategy::AsStack => self.move_crates_as_stack(index_from, index_to, quantity),
         }
     }
 
