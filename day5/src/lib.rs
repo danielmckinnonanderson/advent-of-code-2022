@@ -79,6 +79,7 @@ fn arrangement_from_input_diagram(input: &Vec<String>) -> Arrangement {
             i += 1;
         }
     }
+    println!("{:?}", result);
     result
 }
 
@@ -119,7 +120,7 @@ impl CrateArrangment for Arrangement {
     fn pop(&mut self, index: i8, quantity: i8) -> Result<Vec<Crate>, Error> {
         match self.get_mut(&index) {
             Option::Some(vec) => {
-                println!("Vector at index {} is {:?}, will attempt to move {}", index, vec, quantity);
+                // println!("Vector at index {} is {:?}, will attempt to move {}", index, vec, quantity);
                 let mut result: Vec<Crate> = vec![];
                 let mut i = 0;
 
@@ -154,7 +155,6 @@ impl CrateArrangment for Arrangement {
                     format!("Stack at index {} was empty", index)
                 ))
             }
-            // true => Ok(self.get(&index).unwrap().last().unwrap()),
             false => Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 format!("Index was not found in map, index was {}", index)
@@ -166,7 +166,9 @@ impl CrateArrangment for Arrangement {
         match self.pop(index_from, quantity) {
             Ok(moving) => match self.get_mut(&index_to) {
                 Some(vec) => {
+                    println!("Before {:?}", moving);
                     let moved = vec![vec.to_vec(), moving].concat();
+                    println!("After {:?}", moved);
                     self.insert(index_to, moved);
                 }
                 None => panic!("Stinky"),
@@ -201,6 +203,7 @@ impl CrateArrangment for Arrangement {
 
     fn execute_instructions(&mut self, instructions: &Vec<String>) {
         for instruction in instructions {
+            println!("{}", instruction);
             self.execute_instruction(instruction);
         }
     }
